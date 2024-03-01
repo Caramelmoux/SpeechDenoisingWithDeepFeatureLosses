@@ -28,11 +28,11 @@ outfolder = "."
 try:
     opts, args = getopt.getopt(sys.argv[1:],"hd:l:o:",["ifolder=,lossfolder=,outfolder="])
 except getopt.GetoptError:
-    print 'Usage: python senet_infer.py -d <datafolder> -l <lossfolder> -o <outfolder>'
+    print('Usage: python senet_infer.py -d <datafolder> -l <lossfolder> -o <outfolder>')
     sys.exit(2)
 for opt, arg in opts:
     if opt == '-h':
-        print 'Usage: python senet_infer.py -d <datafolder> -l <lossfolder> -o <outfolder>'
+        print('Usage: python senet_infer.py -d <datafolder> -l <lossfolder> -o <outfolder>')
         sys.exit()
     elif opt in ("-d", "--datafolder"):
         datafolder = arg
@@ -40,25 +40,25 @@ for opt, arg in opts:
         modfolder = arg
     elif opt in ("-o", "--outfolder"):
         outfolder = arg
-print 'Data folder is "' + datafolder + '/"'
-print 'Loss model folder is "' + modfolder + '/"'
-print 'Output model folder is "' + outfolder + '/"'
+print('Data folder is "' + datafolder + '/"')
+print('Loss model folder is "' + modfolder + '/"')
+print('Output model folder is "' + outfolder + '/"')
 
 # SET LOSS FUNCTIONS AND PLACEHOLDERS
-with tf.variable_scope(tf.get_variable_scope()):
-    input=tf.placeholder(tf.float32,shape=[None,1,None,1])
-    clean=tf.placeholder(tf.float32,shape=[None,1,None,1])
+with tf.compat.v1.variable_scope(tf.compat.v1.get_variable_scope()):
+    input=tf.compat.v1.placeholder(tf.float32,shape=[None,1,None,1])
+    clean=tf.compat.v1.placeholder(tf.float32,shape=[None,1,None,1])
         
     enhanced=senet(input, n_layers=SE_LAYERS, norm_type=SE_NORM, n_channels=SE_CHANNELS)
         
     if SE_LOSS_TYPE == "L1": # L1 LOSS
-        loss_weights = tf.placeholder(tf.float32, shape=[])
+        loss_weights = tf.compat.v1.placeholder(tf.float32, shape=[])
         loss_fn = l1_loss(clean, enhanced)
     elif SE_LOSS_TYPE == "L2": # L2 LOSS
-        loss_weights = tf.placeholder(tf.float32, shape=[])
+        loss_weights = tf.compat.v1.placeholder(tf.float32, shape=[])
         loss_fn = l2_loss(clean, enhanced)
     else: # FEATURE LOSS
-        loss_weights = tf.placeholder(tf.float32, shape=[SE_LOSS_LAYERS])
+        loss_weights = tf.compat.v1.placeholder(tf.float32, shape=[SE_LOSS_LAYERS])
         loss_fn = featureloss(clean, enhanced, loss_weights, loss_layers=SE_LOSS_LAYERS, n_layers=LOSS_LAYERS, norm_type=LOSS_NORM,
                                  base_channels=LOSS_BASE_CHANNELS, blk_channels=LOSS_BLK_CHANNELS)
 
@@ -67,29 +67,29 @@ trainset, valset = load_full_data_list(datafolder = datafolder)
 trainset, valset = load_full_data(trainset, valset)
 
 # TRAINING OPTIMIZER
-opt=tf.train.AdamOptimizer(learning_rate=1e-4).\
-    minimize(loss_fn[0],var_list=[var for var in tf.trainable_variables() if var.name.startswith("se_")])
+opt=tf.compat.v1.train.AdamOptimizer(learning_rate=1e-4).\
+    minimize(loss_fn[0],var_list=[var for var in tf.compat.v1.trainable_variables() if var.name.startswith("se_")])
 
 # BEGIN SCRIPT #########################################################################################################
 
 # INITIALIZE GPU CONFIG
-config=tf.ConfigProto()
+config=tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth=True
-sess=tf.Session(config=config)
+sess=tf.compat.v1.Session(config=config)
 
-print "Config ready"
+print("Config ready")
 
-sess.run(tf.global_variables_initializer())
+sess.run(tf.compat.v1.global_variables_initializer())
 
-print "Session initialized"
+print("Session initialized")
 
 # LOAD FEATURE LOSS
 if SE_LOSS_TYPE == "FL":
-    loss_saver = tf.train.Saver([var for var in tf.trainable_variables() if var.name.startswith("loss_")])
+    loss_saver = tf.compat.v1.train.Saver([var for var in tf.compat.v1.trainable_variables() if var.name.startswith("loss_")])
     loss_saver.restore(sess, "./%s/loss_model.ckpt" % modfolder)
 
 Nepochs = 320
-saver = tf.train.Saver([var for var in tf.trainable_variables() if var.name.startswith("se_")])
+saver = tf.compat.v1.train.Saver([var for var in tf.compat.v1.trainable_variables() if var.name.startswith("se_")])
 
 ########################################################################################################################
 
